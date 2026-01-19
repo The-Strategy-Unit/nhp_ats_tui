@@ -1,0 +1,21 @@
+[project]
+name = "nhp_tag_runs_tui"
+version = "0.1.0"
+description = "TUI for tagging NHP scenarios in Azure Table Storage"
+authors = [
+    { name = "Matt Dray", email = "matt.dray@nhs.net" }
+]
+requires-python = ">=3.10"
+
+dependencies = [
+  "azure-data-tables>=12.4",
+  "azure-identity>=1.15",
+  "inquirerpy>=0.3.4",
+]
+
+[project.scripts]
+tag-runs = "nhp_tag_runs_tui.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
