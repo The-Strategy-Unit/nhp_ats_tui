@@ -1,5 +1,7 @@
 # nhp_tag_runs_tui
 
+[![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
+
 ## About
 
 A Python-powered terminal user interface (TUI) to update entities in Azure Table Storage.
@@ -9,17 +11,21 @@ The run-stage label identifies scenarios used in reporting by [nhp_output_report
 
 This is a safer and faster alternative to editing table entities manually.
 
+> [!NOTE]
+> This tool is a work in progress with no guarantees.
+
+
 ## Install
 
 You can install the tool from the web using [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
-```bash
+```powershell
 uv tool install git+https://github.com/The-Strategy-Unit/nhp_tag_runs_tui.git
 ```
 
 Or, for development purposes, you can clone the repo and install it locally in editable mdoe.
 
-```bash
+```powershell
 git clone https://github.com/The-Strategy-Unit/nhp_tag_runs_tui.git
 cd nhp_tag_runs_tui
 uv pip install -e .
@@ -30,7 +36,7 @@ uv pip install -e .
 Login to Azure with [the Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest).
 Select the account where the table exists.
 
-```bash
+```powershell
 az login
 ```
 
@@ -40,14 +46,14 @@ You can obtain the environment-variable values from a member of the Data Science
 In Powershell, you can store these variables on a per-session basis.
 The values provided here are for demonstration purposes.
 
-```bash
+```powershell
 $env:AZURE_STORAGE_ACCOUNT_NAME = "demoaccount"
 $env:TAGGED_RUNS_TABLE_NAME = "demotable"
 ```
 
 Or you can store them persistently.
 
-```bash
+```powershell
 setx AZURE_STORAGE_ACCOUNT_NAME "demoaccount"
 setx TAGGED_RUNS_TABLE_NAME "demotable"
 ```

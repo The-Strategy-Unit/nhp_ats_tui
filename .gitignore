@@ -1,5 +1,9 @@
-# Ignore settings
+# Settings
 .vscode/
+
+# README
+README.html
+README_files/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
