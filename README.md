@@ -19,13 +19,13 @@ This is a safer and faster alternative to editing table entities manually.
 
 You can install the tool from the web using [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
-```powershell
+```bash
 uv tool install git+https://github.com/The-Strategy-Unit/nhp_tag_runs_tui.git
 ```
 
 Or, for development purposes, you can clone the repo and install it locally in editable mdoe.
 
-```powershell
+```bash
 git clone https://github.com/The-Strategy-Unit/nhp_tag_runs_tui.git
 cd nhp_tag_runs_tui
 uv pip install -e .
@@ -36,7 +36,7 @@ uv pip install -e .
 Login to Azure with [the Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest).
 Select the account where the table exists.
 
-```powershell
+```bash
 az login
 ```
 
@@ -46,14 +46,14 @@ You can obtain the environment-variable values from a member of the Data Science
 In Powershell, you can store these variables on a per-session basis.
 The values provided here are for demonstration purposes.
 
-```powershell
+```bash
 $env:AZURE_STORAGE_ACCOUNT_NAME = "demoaccount"
 $env:TAGGED_RUNS_TABLE_NAME = "demotable"
 ```
 
 Or you can store them persistently.
 
-```powershell
+```bash
 setx AZURE_STORAGE_ACCOUNT_NAME "demoaccount"
 setx TAGGED_RUNS_TABLE_NAME "demotable"
 ```
