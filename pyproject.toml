@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-tag-runs = "nhp_tag_runs_tui.cli:main"
+tag-runs = "nhp_tag_runs_tui.tui:main"
 
 [build-system]
 requires = ["hatchling"]
