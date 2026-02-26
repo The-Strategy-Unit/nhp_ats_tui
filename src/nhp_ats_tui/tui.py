@@ -1,5 +1,5 @@
 """
-Interactive command-line interface for tagging scenarios in Azure Table Storage.
+TUI for editing NHP model-run entities in Azure Table Storage.
 """
 
 import os
@@ -16,7 +16,7 @@ from .table import (
 
 def main() -> None:
     """
-    Run the interactive tagging session.
+    Run the interactive editing session.
     """
     storage_account_name = os.getenv("AZURE_STORAGE_ACCOUNT_NAME")
     table_name = os.getenv("TAGGED_RUNS_TABLE_NAME")
