@@ -487,8 +487,8 @@ wheels = [
 ]
 
 [[package]]
-name = "nhp-tag-runs-tui"
-version = "0.0.0.9000"
+name = "nhp-ats-tui"
+version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "azure-data-tables" },

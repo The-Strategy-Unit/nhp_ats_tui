@@ -1,39 +1,30 @@
-# nhp_tag_runs_tui
+# nhp_ats_tui
 
 [![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
 
 ## About
 
-A Python-powered terminal user interface (TUI) to update entities in Azure Table Storage.
+A Python-powered terminal user interface (TUI) for Azure Table Storage (ATS).
+Edit metadata for model runs developed by schemes in the New Hospital Programme (NHP)
 
-Interactively review and update the run-stage label of model results files for scenarios developed by schemes in the New Hospital Programme (NHP).
-The run-stage label identifies scenarios used in reporting by [nhp_output_reports](https://github.com/The-Strategy-Unit/nhp_output_reports) and elsewhere.
+For now, you can review and update:
 
-This is a safer and faster alternative to editing table entities manually.
+* the run-stage property (`run_stage`), which flags scenarios for use by [nhp_output_reports](https://github.com/The-Strategy-Unit/nhp_output_reports)
+* the site properties (`sites_*`), which are used to filter results in [nhp_output_reports](https://github.com/The-Strategy-Unit/nhp_output_reports) (in development)
 
-> [!NOTE]
-> This tool is a work in progress with no guarantees.
-
+This is a safer and faster alternative to editing tables manually.
 
 ## Install
 
 You can install the tool from the web using [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
 ```bash
-uv tool install git+https://github.com/The-Strategy-Unit/nhp_tag_runs_tui.git
+uv tool install git+https://github.com/The-Strategy-Unit/nhp_ats_tui.git
 ```
 
-Or, for development purposes, you can clone the repo and install it locally in editable mdoe.
+## Prerequisites
 
-```bash
-git clone https://github.com/The-Strategy-Unit/nhp_tag_runs_tui.git
-cd nhp_tag_runs_tui
-uv pip install -e .
-```
-
-## Set up
-
-Login to Azure with [the Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest).
+First, you must login to Azure with [the Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest).
 Select the account where the table exists.
 
 ```bash
@@ -41,7 +32,7 @@ az login
 ```
 
 Then set two environment variables.
-You can obtain the environment-variable values from a member of the Data Science team.
+Authorised users can obtain these values from a member of the Data Science team.
 
 In Powershell, you can store these variables on a per-session basis.
 The values provided here are for demonstration purposes.
@@ -60,20 +51,30 @@ setx TAGGED_RUNS_TABLE_NAME "demotable"
 
 These are used to build the table endpoint in the form `https://demoaccount.table.core.windows.net/demotable`.
 
-## Use
+## Enter the TUI
 
-After setup, you can enter the interactive TUI.
+After setup, you can enter the interactive TUI and follow the instructions.
 
 ```bash
-tag-runs
+edit-runs
 ```
 
-To summarise, the tool will:
+You can force-quit out of the tool with <kbd>Ctrl</kbd> + <kbd>C</kbd>.
 
-1. Ask for an NHP scheme code.
-2. Present a list of scenarios for that scheme.
-3. Let you choose one via keyboard interaction.
-4. Let you choose a run-stage label.
-5. Edit the table given your selections.
+## For developers
 
-Use <kbd>Ctrl</kbd> + <kbd>C</kbd> to quit out of the tool.
+Developers can clone the repo and install the tool locally in editable mode.
+The flow might look like this:
+
+```bash
+git clone https://github.com/The-Strategy-Unit/nhp_ats_tui.git
+cd nhp_ats_tui
+uv venv
+.venv\Scripts\activate
+uv sync
+uv pip install -e .
+az login
+$env:AZURE_STORAGE_ACCOUNT_NAME = "demoaccount"
+$env:TAGGED_RUNS_TABLE_NAME = "demotable"
+edit-runs
+```

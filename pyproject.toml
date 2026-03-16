@@ -1,9 +1,10 @@
 [project]
-name = "nhp_tag_runs_tui"
+name = "nhp_ats_tui"
 version = "0.1.0"
-description = "TUI for tagging NHP scenarios in Azure Table Storage"
+description = "TUI to edit NHP model-run entities in Azure Table Storage"
 authors = [
-    { name = "Matt Dray", email = "matt.dray@nhs.net" }
+    { name = "Matt Dray", email = "matt.dray@nhs.net" },
+    { name = "YiWen Hon", email = "yiwen.hon1@nhs.net" },
 ]
 requires-python = ">=3.10"
 
@@ -14,7 +15,7 @@ dependencies = [
 ]
 
 [project.scripts]
-tag-runs = "nhp_tag_runs_tui.tui:main"
+edit-runs = "nhp_ats_tui.tui:main"
 
 [build-system]
 requires = ["hatchling"]
