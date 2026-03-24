@@ -54,7 +54,7 @@ def fetch_scenarios(table: TableClient, scheme_code: str) -> list[dict]:
 
     Args:
         table: An authenticated TableClient.
-        scheme_code: Scheme code (PartitionKey) value.
+        scheme_code: Selected scheme code (the table's PartitionKey).
 
     Returns:
         A list of dictionaries containing scenario metadata.
@@ -66,11 +66,16 @@ def fetch_scenarios(table: TableClient, scheme_code: str) -> list[dict]:
     for entity in entities:
         scenarios.append(
             {
+                # Identifiers
                 "PartitionKey": entity["PartitionKey"],
                 "RowKey": entity["RowKey"],
                 "scenario": entity["scenario"],
                 "create_datetime": entity["create_datetime"],
-                "run_stage": entity.get("run_stage"),  # None if empty
+                # Items to edit
+                "run_stage": entity.get("run_stage"),
+                "sites_ip": entity.get("sites_ip"),
+                "sites_op": entity.get("sites_op"),
+                "sites_aae": entity.get("sites_aae"),
             }
         )
 
@@ -102,7 +107,7 @@ def list_scenarios(scenarios: list[dict]) -> list[str]:
     return values
 
 
-def update_entity(
+def update_run_stage(
     table_client: TableClient,
     scheme_choice: str,
     scenario_choice: str,
@@ -113,9 +118,9 @@ def update_entity(
 
     Args:
         table_client: An authenticated TableClient.
-        scheme_choice: Selected scheme code (PartitionKey).
-        scenario_choice: User-selected scenario label.
-        tag_choice: User-selected run-stage tag.
+        scheme_choice: Selected scheme code (the table's PartitionKey).
+        scenario_choice: Selected scenario label.
+        tag_choice: Selected run-stage tag.
 
     Returns:
         None. The entity is updated the corresponding Azure Table Storage.
@@ -133,6 +138,51 @@ def update_entity(
     )
 
     entity["run_stage"] = tag_choice
+
+    table_client.update_entity(
+        entity=entity,
+        mode=UpdateMode.MERGE,  # update existing entity
+    )
+
+
+def update_sites(
+    table_client: TableClient,
+    scheme_choice: str,
+    scenario_choice: str,
+    activity_type_choice: str,
+    sites_provided: str,
+) -> None:
+    """
+    Update the site codes for an existing scenario entity.
+
+    Args:
+        table_client: An authenticated TableClient.
+        scheme_choice: Selected scheme code (the table's PartitionKey).
+        scenario_choice: Selected scenario label.
+        activity_type_choice: Selected activity type (inpatients, outpatients, A&E)
+        sites_provided: A comma-separated string of site codes.
+
+    Returns:
+        None. The entity is updated the corresponding Azure Table Storage.
+    """
+    scenario_choice_split = scenario_choice.split()
+    scenario = scenario_choice_split[0]
+    created = scenario_choice_split[1].strip("()")
+
+    # RowKey is an entity-unique identifier, composed of name and datetime
+    row_key = f"{scenario}-{created}"
+
+    entity = table_client.get_entity(
+        partition_key=scheme_choice,
+        row_key=row_key,
+    )
+
+    if "inpatients" in activity_type_choice:
+        entity["sites_ip"] = sites_provided
+    elif "outpatients" in activity_type_choice:
+        entity["sites_op"] = sites_provided
+    elif "A&E" in activity_type_choice:
+        entity["sites_aae"] = sites_provided
 
     table_client.update_entity(
         entity=entity,

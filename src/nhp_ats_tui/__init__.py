@@ -3,7 +3,8 @@ from .table import (
     get_unique_schemes,
     fetch_scenarios,
     list_scenarios,
-    update_entity,
+    update_run_stage,
+    update_sites,
 )
 
 __all__ = [
@@ -11,5 +12,6 @@ __all__ = [
     "get_unique_schemes",
     "fetch_scenarios",
     "list_scenarios",
-    "update_entity",
+    "update_run_stage",
+    "update_sites",
 ]
