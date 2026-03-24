@@ -4,6 +4,7 @@ TUI for editing NHP model-run entities in Azure Table Storage.
 
 import os
 from InquirerPy import inquirer
+from dotenv import load_dotenv
 
 from .table import (
     get_table_client,
@@ -13,13 +14,13 @@ from .table import (
     update_entity,
 )
 
-
 def main() -> None:
     """
     Run the interactive editing session.
     """
+    load_dotenv()
     storage_account_name = os.getenv("AZURE_STORAGE_ACCOUNT_NAME")
-    table_name = os.getenv("TAGGED_RUNS_TABLE_NAME")
+    table_name = os.getenv("MODEL_RUNS_TABLE_NAME")
     print("⏳ Connecting to table...")
     table = get_table_client(storage_account_name, table_name)
 
