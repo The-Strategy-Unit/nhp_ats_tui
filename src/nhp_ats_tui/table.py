@@ -177,14 +177,27 @@ def update_sites(
         row_key=row_key,
     )
 
+    sites_provided = sites_provided or ""
+
     if "inpatients" in activity_type_choice:
-        entity["sites_ip"] = sites_provided
-    elif "outpatients" in activity_type_choice:
-        entity["sites_op"] = sites_provided
-    elif "A&E" in activity_type_choice:
-        entity["sites_aae"] = sites_provided
+        if sites_provided == "":
+            entity.pop("sites_ip", None)  # to remove property
+        else:
+            entity["sites_ip"] = sites_provided
+
+    if "outpatients" in activity_type_choice:
+        if sites_provided == "":
+            entity.pop("sites_op", None)
+        else:
+            entity["sites_op"] = sites_provided
+
+    if "A&E" in activity_type_choice:
+        if sites_provided == "":
+            entity.pop("sites_aae", None)
+        else:
+            entity["sites_aae"] = sites_provided
 
     table_client.update_entity(
-        entity=entity,
-        mode=UpdateMode.MERGE,  # update existing entity
+        entity=entity,  # all properties except popped
+        mode=UpdateMode.REPLACE,  # we can REPLACE becsuse entity has all properties
     )

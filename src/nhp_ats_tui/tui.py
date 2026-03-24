@@ -36,6 +36,11 @@ def main() -> None:
     scenarios = fetch_scenarios(table, scheme_choice)
     scenarios_list = list_scenarios(scenarios)
 
+    scenario_choice = inquirer.select(
+        message="Choose a scenario to edit:",
+        choices=scenarios_list,
+    ).execute()
+
     task_choice = inquirer.select(
         message="Choose a task",
         choices=[
@@ -44,11 +49,6 @@ def main() -> None:
             "Edit sites (outpatients)",
             "Edit sites (A&E)",
         ],
-    ).execute()
-
-    scenario_choice = inquirer.select(
-        message="Choose a scenario to tag:",
-        choices=scenarios_list,
     ).execute()
 
     if task_choice == "Edit the run stage":
@@ -66,12 +66,8 @@ def main() -> None:
 
         print(f"🏷️  Set run_stage tag to '{tag_choice}'.")
 
-    if "Edit sites" in task_choice:
+    elif "Edit sites" in task_choice:
         print("Current sites: TODO")
-
-        sites_provided = inquirer.text(
-            "Provide sites (like 'XYZ01,XYZ02' or 'ALL'):"
-        ).execute()
 
         if "inpatients" in task_choice:
             activity_type_choice = "inpatients"
@@ -80,15 +76,25 @@ def main() -> None:
         elif "A&E" in task_choice:
             activity_type_choice = "A&E"
 
+        sites_provided = (
+            inquirer.text(
+                "Provide sites (like 'XYZ01,XYZ02' or 'ALL' or blank to remove):"
+            ).execute()
+            or ""
+        )
+
         update_sites(
             table,
             scheme_choice,
             scenario_choice,
             activity_type_choice,
-            sites_provided,
+            sites_provided,  # gets deleted if empty string
         )
 
-        print(f"🏥 Set {activity_type_choice} sites to '{sites_provided}'.")
+        if sites_provided == "":
+            print(f"🏥 Removed all {activity_type_choice} sites.")
+        else:
+            print(f"🏥 Set {activity_type_choice} sites to '{sites_provided}'.")
 
     print(f"✅ Updated {scenario_choice} for scheme {scheme_choice}. Exiting.")
 
