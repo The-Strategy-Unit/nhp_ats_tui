@@ -20,13 +20,20 @@ def main() -> None:
     """
     Run the interactive editing session.
     """
-    load_dotenv()
+    print("⏳ Getting environment variables...")
+    load_dotenv()  # load from .env file, otherwise from environment
     storage_account_name = os.getenv("AZURE_STORAGE_ACCOUNT_NAME")
     table_name = os.getenv("MODEL_RUNS_TABLE_NAME")
+
+    if not storage_account_name or not table_name:
+        raise EnvironmentError(
+            "AZURE_STORAGE_ACCOUNT_NAME and MODEL_RUNS_TABLE_NAME must be set."
+    )
+
     print("⏳ Connecting to table...")
     table = get_table_client(storage_account_name, table_name)
 
-    print("⌛ Fetching scheme codes...")
+    print("⏳ Fetching scheme codes...")
     schemes_unique = get_unique_schemes(table)
     scheme_choice = inquirer.fuzzy(
         message="Choose a scheme:",
