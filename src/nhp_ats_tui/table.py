@@ -40,7 +40,7 @@ def get_unique_schemes(table: TableClient) -> list[str]:
         A sorted list of unique scheme codes.
     """
     schemes = table.query_entities(
-        query_filter=None,  # mandatory argument
+        query_filter="",  # mandatory argument, blank to return all entities
         select=["PartitionKey"],  # entities are partitioned by scheme code
     )
     schemes_unique = sorted({scheme["PartitionKey"] for scheme in schemes})
