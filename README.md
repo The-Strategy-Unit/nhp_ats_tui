@@ -4,77 +4,67 @@
 
 ## About
 
+### Purpose
+
 A Python-powered terminal user interface (TUI) for Azure Table Storage (ATS).
-Edit metadata for model runs developed by schemes in the New Hospital Programme (NHP)
-
-For now, you can review and update:
-
-* the run-stage property (`run_stage`), which flags scenarios for use by [nhp_output_reports](https://github.com/The-Strategy-Unit/nhp_output_reports)
-* the site properties (`sites_*`), which are used to filter results in [nhp_output_reports](https://github.com/The-Strategy-Unit/nhp_output_reports) (in development)
-
+Edit metadata for model runs developed by schemes in the New Hospital Programme (NHP).
 This is a safer and faster alternative to editing tables manually.
 
-## Install
+This tool is intended for use by developers of the NHP model and not for wider public use.
 
-You can install the tool from the web using [uv](https://docs.astral.sh/uv/getting-started/installation/).
+### Extent
+
+For now, the tool lets you review and update a model run's:
+
+* run-stage property (`run_stage`), which flags scenarios for use by [nhp_output_reports](https://github.com/The-Strategy-Unit/nhp_output_reports) and other secondary products
+* site properties (`sites_ip`, `sites_op` and`sites_aae`), which are used to filter results in [nhp_output_reports](https://github.com/The-Strategy-Unit/nhp_output_reports) (in development)
+
+## Usage
+
+### To develop
+
+After cloning the repo, set two values in a `.env` file in the project directory:
+
+* `AZURE_STORAGE_ACCOUNT_NAME`
+* `MODEL_RUNS_TABLE_NAME`
+
+They're used to build the table endpoint in the form `https://demoaccount.table.core.windows.net/demotable`.
+
+Authorised users can obtain these values from the Data Science team.
+
+### To install
+
+Alternatively, you can install the tool from the web using [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
 ```bash
 uv tool install git+https://github.com/The-Strategy-Unit/nhp_ats_tui.git
 ```
 
-## Prerequisites
+You can set the required environment variables in several ways.
+You could:
 
-First, you must login to Azure with [the Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest).
-Select the account where the table exists.
+* add a `.env` to the directory you're working in
+* use e.g. `setx AZURE_STORAGE_ACCOUNT_NAME "demoaccount"` in Powershell (then restart the terminal) to set them persistently
+* use `$env:AZURE_STORAGE_ACCOUNT_NAME = "demoaccount"` in Powershell to set them in the current session
+
+### Login to Azure
+
+Before using the tool, you must first login to Azure with [the Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest):
 
 ```bash
 az login
 ```
 
-Then set two environment variables.
-Authorised users can obtain these values from a member of the Data Science team.
+Assuming you're authorised, select the account where the table exists.
 
-In Powershell, you can store these variables on a per-session basis.
-The values provided here are for demonstration purposes.
+### Enter the TUI
 
-```bash
-$env:AZURE_STORAGE_ACCOUNT_NAME = "demoaccount"
-$env:TAGGED_RUNS_TABLE_NAME = "demotable"
-```
-
-Or you can store them persistently.
-
-```bash
-setx AZURE_STORAGE_ACCOUNT_NAME "demoaccount"
-setx TAGGED_RUNS_TABLE_NAME "demotable"
-```
-
-These are used to build the table endpoint in the form `https://demoaccount.table.core.windows.net/demotable`.
-
-## Enter the TUI
-
-After setup, you can enter the interactive TUI and follow the instructions.
+Having completed the steps above, you can enter the interactive TUI:
 
 ```bash
 edit-runs
 ```
+
+Use your keyboard to navigate and provide input.
 
 You can force-quit out of the tool with <kbd>Ctrl</kbd> + <kbd>C</kbd>.
-
-## For developers
-
-Developers can clone the repo and install the tool locally in editable mode.
-The flow might look like this:
-
-```bash
-git clone https://github.com/The-Strategy-Unit/nhp_ats_tui.git
-cd nhp_ats_tui
-uv venv
-.venv\Scripts\activate
-uv sync
-uv pip install -e .
-az login
-$env:AZURE_STORAGE_ACCOUNT_NAME = "demoaccount"
-$env:TAGGED_RUNS_TABLE_NAME = "demotable"
-edit-runs
-```
