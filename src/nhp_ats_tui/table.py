@@ -200,5 +200,5 @@ def update_sites(
 
     table_client.update_entity(
         entity=entity,  # all properties except popped
-        mode=UpdateMode.REPLACE,  # we can REPLACE becsuse entity has all properties
+        mode=UpdateMode.REPLACE,  # we can REPLACE because entity has all properties
     )
