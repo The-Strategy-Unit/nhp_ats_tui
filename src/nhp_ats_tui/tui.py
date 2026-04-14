@@ -50,7 +50,7 @@ def main() -> None:
     ).execute()
 
     task_choice = inquirer.select(
-        message="Choose a task",
+        message="Choose a task:",
         choices=[
             "Edit the run stage",
             "Edit sites (inpatients)",
