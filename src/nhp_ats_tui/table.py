@@ -146,7 +146,7 @@ def update_run_stage(
     tag_choice: str,
 ) -> None:
     """
-    Update the run-stage tag for an existing scenario entity.
+    Update the run-stage property for an existing scenario entity.
 
     Args:
         table_client (TableClient): An authenticated TableClient.
@@ -171,39 +171,38 @@ def update_sites(
     scheme_choice: str,
     scenario_choice: str,
     activity_type_choice: str,
-    sites_provided: str,
+    sites_provided: str | None,
 ) -> None:
     """
-    Update the site codes for an existing scenario entity.
+    Update or remove the site-code property for an existing scenario entity.
 
     Args:
         table_client (TableClient): An authenticated TableClient.
         scheme_choice (str): Selected scheme code (the entity's PartitionKey).
         scenario_choice (str): Selected scenario name.
         activity_type_choice (str): Selected activity type.
-        sites_provided (str): A comma-separated string of site codes.
+        sites_provided (str | None): A comma-separated string of site codes.
 
     Returns:
         None. The entity is updated the corresponding Azure Table Storage.
     """
     entity = get_table_entity(table_client, scheme_choice, scenario_choice)
 
-    sites_provided = sites_provided or ""
-
     if "inpatients" in activity_type_choice:
-        if sites_provided == "":  # blank user input means remove property
-            entity.pop("sites_ip", None)  # to remove property
+        # Remove the property from the entity if empty, otherwise overwrite
+        if sites_provided is None:
+            entity.pop("sites_ip", None)
         else:
             entity["sites_ip"] = sites_provided
 
     if "outpatients" in activity_type_choice:
-        if sites_provided == "":
+        if sites_provided is None:
             entity.pop("sites_op", None)
         else:
             entity["sites_op"] = sites_provided
 
     if "A&E" in activity_type_choice:
-        if sites_provided == "":
+        if sites_provided is None:
             entity.pop("sites_aae", None)
         else:
             entity["sites_aae"] = sites_provided

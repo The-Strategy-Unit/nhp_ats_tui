@@ -79,29 +79,26 @@ def main() -> None:
 
         if "inpatients" in task_choice:
             activity_type_choice = "inpatients"
-            sites_existing = entity.get("sites_ip")
+            sites_existing = entity.get("sites_ip") or "none"
         elif "outpatients" in task_choice:
             activity_type_choice = "outpatients"
-            sites_existing = entity.get("sites_op")
+            sites_existing = entity.get("sites_op") or "none"
         elif "A&E" in task_choice:
             activity_type_choice = "A&E"
-            sites_existing = entity.get("sites_aae")
+            sites_existing = entity.get("sites_aae") or "none"
 
         print(f"ℹ️  Current {activity_type_choice} sites: {sites_existing}")
 
-        sites_provided = (
-            inquirer.text(
-                "Provide sites (e.g. 'XYZ01,XYZ02', 'ALL') or leave blank to remove:"
-            ).execute()
-            or ""
-        )
+        sites_provided = inquirer.text(
+            "Provide sites (e.g. 'XYZ01,XYZ02', 'ALL') or leave blank to remove:"
+        ).execute()
 
         update_sites(
             table,
             scheme_choice,
             scenario_choice,
             activity_type_choice,
-            sites_provided,  # gets deleted if empty string
+            sites_provided,  # site property deleted if None
         )
 
         if sites_provided == "":
