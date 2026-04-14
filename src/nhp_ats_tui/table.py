@@ -143,7 +143,7 @@ def update_run_stage(
     table_client: TableClient,
     scheme_choice: str,
     scenario_choice: str,
-    tag_choice: str,
+    tag_choice: str | None,
 ) -> None:
     """
     Update the run-stage property for an existing scenario entity.
@@ -152,17 +152,21 @@ def update_run_stage(
         table_client (TableClient): An authenticated TableClient.
         scheme_choice (str): Selected scheme code (the entity's PartitionKey).
         scenario_choice (str): Selected scenario name.
-        tag_choice (str): Selected run-stage tag.
+        tag_choice (str | None): Selected run-stage tag.
 
     Returns:
         None. The entity is updated the corresponding Azure Table Storage.
     """
     entity = get_table_entity(table_client, scheme_choice, scenario_choice)
-    entity["run_stage"] = tag_choice
+
+    if tag_choice is None:
+        entity.pop("run_stage", None)
+    else:
+        entity["run_stage"] = tag_choice
 
     table_client.update_entity(
         entity=entity,
-        mode=UpdateMode.MERGE,  # update existing entity
+        mode=UpdateMode.REPLACE,  # REPLACE because properties may have been removed
     )
 
 
@@ -208,6 +212,6 @@ def update_sites(
             entity["sites_aae"] = sites_provided
 
     table_client.update_entity(
-        entity=entity,  # all properties except removed ('popped') ones
-        mode=UpdateMode.REPLACE,  # REPLACE because entity has all properties
+        entity=entity,
+        mode=UpdateMode.REPLACE,  # REPLACE because properties may have been removed
     )

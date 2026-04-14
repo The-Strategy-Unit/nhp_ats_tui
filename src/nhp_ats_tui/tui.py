@@ -60,19 +60,37 @@ def main() -> None:
     ).execute()
 
     if task_choice == "Edit the run stage":
-        tag_choice = inquirer.select(
-            message="Choose a run-stage tag:",
-            choices=[
-                "final_report_ndg2",
-                "final_report_ndg3",
-                "validation_report_ndg2",
-                "validation_report_ndg3",
-            ],
+        tag_subtask_choice = inquirer.select(
+            message="Choose a run-stage option:",
+            choices=["Add/change", "Remove"],
         ).execute()
+
+        if tag_subtask_choice == "Remove":
+            tag_choice = None  # will remove the run_stage property from the entity
+
+        if tag_subtask_choice == "Add/change":
+            tag_choice = inquirer.select(
+                message="Choose a run-stage tag:",
+                choices=[
+                    "final_report_ndg2",
+                    "final_report_ndg3",
+                    "validation_report_ndg3",
+                    "validation_report_ndg2",
+                    "Other"
+                ],
+            ).execute()
+
+            if tag_choice == "Other":
+                tag_choice = inquirer.text(
+                    "Type a run-stage tag (lowercase, underscore-separated, with NDG variant):"
+                ).execute()
 
         update_run_stage(table, scheme_choice, scenario_choice, tag_choice)
 
-        print(f"✅ Set run_stage tag to '{tag_choice}'. Exiting.")
+        if tag_subtask_choice == "Remove":
+            print("✅ Removed run-stage tag. Exiting.")
+        else:
+            print(f"✅ Set run-stage tag to '{tag_choice}'. Exiting.")
 
     elif "Edit sites" in task_choice:
         entity = get_table_entity(table, scheme_choice, scenario_choice)
@@ -90,7 +108,7 @@ def main() -> None:
         print(f"ℹ️  Current {activity_type_choice} sites: {sites_existing}")
 
         sites_provided = inquirer.text(
-            "Provide sites (e.g. 'XYZ01,XYZ02', 'ALL') or leave blank to remove:"
+            "Type site codes (e.g. 'XYZ01,XYZ02', 'ALL') or leave blank to remove:"
         ).execute()
 
         update_sites(
