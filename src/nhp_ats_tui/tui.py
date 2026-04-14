@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 from .table import (
     get_table_client,
+    get_table_entity,
     get_unique_schemes,
     fetch_scenarios,
     list_scenarios,
@@ -71,21 +72,26 @@ def main() -> None:
 
         update_run_stage(table, scheme_choice, scenario_choice, tag_choice)
 
-        print(f"🏷️  Set run_stage tag to '{tag_choice}'.")
+        print(f"✅ Set run_stage tag to '{tag_choice}'. Exiting.")
 
     elif "Edit sites" in task_choice:
-        print("Current sites: TODO")
+        entity = get_table_entity(table, scheme_choice, scenario_choice)
 
         if "inpatients" in task_choice:
             activity_type_choice = "inpatients"
+            sites_existing = entity.get("sites_ip")
         elif "outpatients" in task_choice:
             activity_type_choice = "outpatients"
+            sites_existing = entity.get("sites_op")
         elif "A&E" in task_choice:
             activity_type_choice = "A&E"
+            sites_existing = entity.get("sites_aae")
+
+        print(f"ℹ️  Current {activity_type_choice} sites: {sites_existing}")
 
         sites_provided = (
             inquirer.text(
-                "Provide sites (like 'XYZ01,XYZ02' or 'ALL' or blank to remove):"
+                "Provide sites (e.g. 'XYZ01,XYZ02', 'ALL') or leave blank to remove:"
             ).execute()
             or ""
         )
@@ -99,11 +105,11 @@ def main() -> None:
         )
 
         if sites_provided == "":
-            print(f"🏥 Removed all {activity_type_choice} sites.")
+            print(f"✅ Removed all {activity_type_choice} sites. Exiting.")
         else:
-            print(f"🏥 Set {activity_type_choice} sites to '{sites_provided}'.")
-
-    print(f"✅ Updated {scenario_choice} for scheme {scheme_choice}. Exiting.")
+            print(
+                f"✅ Set {activity_type_choice} sites to '{sites_provided}'. Exiting."
+            )
 
 
 if __name__ == "__main__":
