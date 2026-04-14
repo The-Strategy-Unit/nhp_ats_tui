@@ -28,7 +28,7 @@ def main() -> None:
     if not storage_account_name or not table_name:
         raise EnvironmentError(
             "AZURE_STORAGE_ACCOUNT_NAME and MODEL_RUNS_TABLE_NAME must be set."
-    )
+        )
 
     print("⏳ Connecting to table...")
     table = get_table_client(storage_account_name, table_name)

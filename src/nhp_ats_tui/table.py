@@ -2,7 +2,7 @@
 Access and handle entities from Azure Table Storage.
 """
 
-from azure.data.tables import TableClient, UpdateMode
+from azure.data.tables import TableClient, TableEntity, UpdateMode
 from azure.identity import DefaultAzureCredential
 
 
@@ -27,6 +27,38 @@ def get_table_client(storage_account_name: str, table_name: str) -> TableClient:
     )
 
     return table_client
+
+
+def get_table_entity(
+    table: TableClient,
+    scheme_choice: str,
+    scenario_choice: str,
+) -> TableEntity:
+    """
+    Get a TableEntity from an authenticated TableClient instance.
+
+    Args:
+        table (TableClient): An authenticated TableClient.
+        scheme_choice (str): Selected scheme code (the entity's PartitionKey).
+        scenario_choice (str): Selected scenario name.
+
+    Returns:
+        A TableEntity.
+    """
+
+    scenario_choice_split = scenario_choice.split()
+    scenario = scenario_choice_split[0]
+    created = scenario_choice_split[1].strip("()")
+
+    # RowKey is an entity-unique identifier, composed of name and datetime
+    row_key = f"{scenario}-{created}"
+
+    entity = table.get_entity(
+        partition_key=scheme_choice,
+        row_key=row_key,
+    )
+
+    return entity
 
 
 def get_unique_schemes(table: TableClient) -> list[str]:
@@ -54,7 +86,7 @@ def fetch_scenarios(table: TableClient, scheme_code: str) -> list[dict]:
 
     Args:
         table (TableClient): An authenticated TableClient.
-        scheme_code (str): Selected scheme code (the table's PartitionKey).
+        scheme_code (str): Selected scheme code (the entity's PartitionKey).
 
     Returns:
         A list of dictionaries containing scenario metadata.
@@ -91,7 +123,7 @@ def list_scenarios(scenarios: list[dict]) -> list[str]:
 
     Returns:
         A list of formatted scenario labels for TUI selection, in the format
-        "<scenario> (<create_datetime>) [<run_stage>]".
+        "<scenario> (<create_datetime>)", possibly appended with "[<run_stage>]".
     """
     values = []
     for scenario in scenarios:
@@ -114,29 +146,18 @@ def update_run_stage(
     tag_choice: str,
 ) -> None:
     """
-    Update the run_stage tag for an existing scenario entity.
+    Update the run-stage tag for an existing scenario entity.
 
     Args:
         table_client (TableClient): An authenticated TableClient.
-        scheme_choice (str): Selected scheme code (the table's PartitionKey).
-        scenario_choice (str): Selected scenario label.
+        scheme_choice (str): Selected scheme code (the entity's PartitionKey).
+        scenario_choice (str): Selected scenario name.
         tag_choice (str): Selected run-stage tag.
 
     Returns:
         None. The entity is updated the corresponding Azure Table Storage.
     """
-    scenario_choice_split = scenario_choice.split()
-    scenario = scenario_choice_split[0]
-    created = scenario_choice_split[1].strip("()")
-
-    # RowKey is an entity-unique identifier, composed of name and datetime
-    row_key = f"{scenario}-{created}"
-
-    entity = table_client.get_entity(
-        partition_key=scheme_choice,
-        row_key=row_key,
-    )
-
+    entity = get_table_entity(table_client, scheme_choice, scenario_choice)
     entity["run_stage"] = tag_choice
 
     table_client.update_entity(
@@ -157,26 +178,15 @@ def update_sites(
 
     Args:
         table_client (TableClient): An authenticated TableClient.
-        scheme_choice (str): Selected scheme code (the table's PartitionKey).
-        scenario_choice (str): Selected scenario label.
+        scheme_choice (str): Selected scheme code (the entity's PartitionKey).
+        scenario_choice (str): Selected scenario name.
         activity_type_choice (str): Selected activity type.
         sites_provided (str): A comma-separated string of site codes.
 
     Returns:
         None. The entity is updated the corresponding Azure Table Storage.
     """
-    scenario_choice_split = scenario_choice.split()
-    scenario = scenario_choice_split[0]
-    created = scenario_choice_split[1].strip("()")
-
-    # RowKey is an entity-unique identifier, composed of name and datetime
-    row_key = f"{scenario}-{created}"
-
-    # Retrieve all properties for the given entity
-    entity = table_client.get_entity(
-        partition_key=scheme_choice,
-        row_key=row_key,
-    )
+    entity = get_table_entity(table_client, scheme_choice, scenario_choice)
 
     sites_provided = sites_provided or ""
 
@@ -199,6 +209,6 @@ def update_sites(
             entity["sites_aae"] = sites_provided
 
     table_client.update_entity(
-        entity=entity,  # all properties except popped
-        mode=UpdateMode.REPLACE,  # we can REPLACE because entity has all properties
+        entity=entity,  # all properties except removed ('popped') ones
+        mode=UpdateMode.REPLACE,  # REPLACE because entity has all properties
     )
