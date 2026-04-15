@@ -1,6 +1,7 @@
 # nhp_ats_tui
 
 [![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
+[![Code quality](https://github.com/The-Strategy-Unit/nhp_ats_tui/actions/workflows/code-quality.yml/badge.svg)](https://github.com/The-Strategy-Unit/nhp_ats_tui/actions/workflows/code-quality.yml)
 
 ## About
 
