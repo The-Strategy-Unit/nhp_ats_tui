@@ -2,7 +2,7 @@
 Access and handle entities from Azure Table Storage.
 """
 
-from azure.data.tables import TableClient, UpdateMode
+from azure.data.tables import TableClient, TableEntity, UpdateMode
 from azure.identity import DefaultAzureCredential
 
 
@@ -27,6 +27,38 @@ def get_table_client(storage_account_name: str, table_name: str) -> TableClient:
     )
 
     return table_client
+
+
+def get_table_entity(
+    table: TableClient,
+    scheme_choice: str,
+    scenario_choice: str,
+) -> TableEntity:
+    """
+    Get a TableEntity from an authenticated TableClient instance.
+
+    Args:
+        table (TableClient): An authenticated TableClient.
+        scheme_choice (str): Selected scheme code (the entity's PartitionKey).
+        scenario_choice (str): Selected scenario name.
+
+    Returns:
+        A TableEntity.
+    """
+
+    scenario_choice_split = scenario_choice.split()
+    scenario = scenario_choice_split[0]
+    created = scenario_choice_split[1].strip("()")
+
+    # RowKey is an entity-unique identifier, composed of name and datetime
+    row_key = f"{scenario}-{created}"
+
+    entity = table.get_entity(
+        partition_key=scheme_choice,
+        row_key=row_key,
+    )
+
+    return entity
 
 
 def get_unique_schemes(table: TableClient) -> list[str]:
@@ -54,7 +86,7 @@ def fetch_scenarios(table: TableClient, scheme_code: str) -> list[dict]:
 
     Args:
         table (TableClient): An authenticated TableClient.
-        scheme_code (str): Selected scheme code (the table's PartitionKey).
+        scheme_code (str): Selected scheme code (the entity's PartitionKey).
 
     Returns:
         A list of dictionaries containing scenario metadata.
@@ -91,7 +123,7 @@ def list_scenarios(scenarios: list[dict]) -> list[str]:
 
     Returns:
         A list of formatted scenario labels for TUI selection, in the format
-        "<scenario> (<create_datetime>) [<run_stage>]".
+        "<scenario> (<create_datetime>)", possibly appended with "[<run_stage>]".
     """
     values = []
     for scenario in scenarios:
@@ -111,37 +143,30 @@ def update_run_stage(
     table_client: TableClient,
     scheme_choice: str,
     scenario_choice: str,
-    tag_choice: str,
+    tag_choice: str | None,
 ) -> None:
     """
-    Update the run_stage tag for an existing scenario entity.
+    Update the run-stage property for an existing scenario entity.
 
     Args:
         table_client (TableClient): An authenticated TableClient.
-        scheme_choice (str): Selected scheme code (the table's PartitionKey).
-        scenario_choice (str): Selected scenario label.
-        tag_choice (str): Selected run-stage tag.
+        scheme_choice (str): Selected scheme code (the entity's PartitionKey).
+        scenario_choice (str): Selected scenario name.
+        tag_choice (str | None): Selected run-stage tag.
 
     Returns:
         None. The entity is updated the corresponding Azure Table Storage.
     """
-    scenario_choice_split = scenario_choice.split()
-    scenario = scenario_choice_split[0]
-    created = scenario_choice_split[1].strip("()")
+    entity = get_table_entity(table_client, scheme_choice, scenario_choice)
 
-    # RowKey is an entity-unique identifier, composed of name and datetime
-    row_key = f"{scenario}-{created}"
-
-    entity = table_client.get_entity(
-        partition_key=scheme_choice,
-        row_key=row_key,
-    )
-
-    entity["run_stage"] = tag_choice
+    if tag_choice is None:
+        entity.pop("run_stage", None)
+    else:
+        entity["run_stage"] = tag_choice
 
     table_client.update_entity(
         entity=entity,
-        mode=UpdateMode.MERGE,  # update existing entity
+        mode=UpdateMode.REPLACE,  # REPLACE because properties may have been removed
     )
 
 
@@ -150,55 +175,43 @@ def update_sites(
     scheme_choice: str,
     scenario_choice: str,
     activity_type_choice: str,
-    sites_provided: str,
+    sites_provided: str | None,
 ) -> None:
     """
-    Update the site codes for an existing scenario entity.
+    Update or remove the site-code property for an existing scenario entity.
 
     Args:
         table_client (TableClient): An authenticated TableClient.
-        scheme_choice (str): Selected scheme code (the table's PartitionKey).
-        scenario_choice (str): Selected scenario label.
+        scheme_choice (str): Selected scheme code (the entity's PartitionKey).
+        scenario_choice (str): Selected scenario name.
         activity_type_choice (str): Selected activity type.
-        sites_provided (str): A comma-separated string of site codes.
+        sites_provided (str | None): A comma-separated string of site codes.
 
     Returns:
         None. The entity is updated the corresponding Azure Table Storage.
     """
-    scenario_choice_split = scenario_choice.split()
-    scenario = scenario_choice_split[0]
-    created = scenario_choice_split[1].strip("()")
-
-    # RowKey is an entity-unique identifier, composed of name and datetime
-    row_key = f"{scenario}-{created}"
-
-    # Retrieve all properties for the given entity
-    entity = table_client.get_entity(
-        partition_key=scheme_choice,
-        row_key=row_key,
-    )
-
-    sites_provided = sites_provided or ""
+    entity = get_table_entity(table_client, scheme_choice, scenario_choice)
 
     if "inpatients" in activity_type_choice:
-        if sites_provided == "":  # blank user input means remove property
-            entity.pop("sites_ip", None)  # to remove property
+        # Remove the property from the entity if empty, otherwise overwrite
+        if sites_provided is None:
+            entity.pop("sites_ip", None)
         else:
             entity["sites_ip"] = sites_provided
 
     if "outpatients" in activity_type_choice:
-        if sites_provided == "":
+        if sites_provided is None:
             entity.pop("sites_op", None)
         else:
             entity["sites_op"] = sites_provided
 
     if "A&E" in activity_type_choice:
-        if sites_provided == "":
+        if sites_provided is None:
             entity.pop("sites_aae", None)
         else:
             entity["sites_aae"] = sites_provided
 
     table_client.update_entity(
-        entity=entity,  # all properties except popped
-        mode=UpdateMode.REPLACE,  # we can REPLACE because entity has all properties
+        entity=entity,
+        mode=UpdateMode.REPLACE,  # REPLACE because properties may have been removed
     )

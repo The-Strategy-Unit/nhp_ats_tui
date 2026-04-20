@@ -18,7 +18,7 @@ This tool is intended for use by developers of the NHP model and not for wider p
 For now, the tool lets you review and update a model run's:
 
 * run-stage property (`run_stage`), which flags scenarios for use by [nhp_output_reports](https://github.com/The-Strategy-Unit/nhp_output_reports) and other secondary products
-* site properties (`sites_ip`, `sites_op` and`sites_aae`), which are used to filter results in [nhp_output_reports](https://github.com/The-Strategy-Unit/nhp_output_reports) (in development)
+* site properties (`sites_ip`, `sites_op` and `sites_aae`), which are used to filter results in [nhp_output_reports](https://github.com/The-Strategy-Unit/nhp_output_reports)
 
 ## Usage
 
@@ -32,6 +32,12 @@ After cloning the repo, set two values in a `.env` file in the project directory
 They're used to build the table endpoint in the form `https://demoaccount.table.core.windows.net/demotable`.
 
 Authorised users can obtain these values from the Data Science team.
+
+Then you can develop the tool with the project in editable mode:
+
+```bash
+uv pip install -e .
+```
 
 ### To install
 

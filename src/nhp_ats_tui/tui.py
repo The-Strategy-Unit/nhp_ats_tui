@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 from .table import (
     get_table_client,
+    get_table_entity,
     get_unique_schemes,
     fetch_scenarios,
     list_scenarios,
@@ -49,7 +50,7 @@ def main() -> None:
     ).execute()
 
     task_choice = inquirer.select(
-        message="Choose a task",
+        message="Choose a task:",
         choices=[
             "Edit the run stage",
             "Edit sites (inpatients)",
@@ -59,51 +60,71 @@ def main() -> None:
     ).execute()
 
     if task_choice == "Edit the run stage":
-        tag_choice = inquirer.select(
-            message="Choose a run-stage tag:",
-            choices=[
-                "final_report_ndg2",
-                "final_report_ndg3",
-                "validation_report_ndg2",
-                "validation_report_ndg3",
-            ],
+        tag_subtask_choice = inquirer.select(
+            message="Choose a run-stage option:",
+            choices=["Add/change", "Remove"],
         ).execute()
+
+        if tag_subtask_choice == "Remove":
+            tag_choice = None  # will remove the run_stage property from the entity
+
+        if tag_subtask_choice == "Add/change":
+            tag_choice = inquirer.select(
+                message="Choose a run-stage tag:",
+                choices=[
+                    "final_report_ndg2",
+                    "final_report_ndg3",
+                    "validation_report_ndg3",
+                    "validation_report_ndg2",
+                    "Other"
+                ],
+            ).execute()
+
+            if tag_choice == "Other":
+                tag_choice = inquirer.text(
+                    "Type a run-stage tag (lowercase, underscore-separated, with NDG variant):"
+                ).execute()
 
         update_run_stage(table, scheme_choice, scenario_choice, tag_choice)
 
-        print(f"🏷️  Set run_stage tag to '{tag_choice}'.")
+        if tag_subtask_choice == "Remove":
+            print("✅ Removed run-stage tag. Exiting.")
+        else:
+            print(f"✅ Set run-stage tag to '{tag_choice}'. Exiting.")
 
     elif "Edit sites" in task_choice:
-        print("Current sites: TODO")
+        entity = get_table_entity(table, scheme_choice, scenario_choice)
 
         if "inpatients" in task_choice:
             activity_type_choice = "inpatients"
+            sites_existing = entity.get("sites_ip") or "none"
         elif "outpatients" in task_choice:
             activity_type_choice = "outpatients"
+            sites_existing = entity.get("sites_op") or "none"
         elif "A&E" in task_choice:
             activity_type_choice = "A&E"
+            sites_existing = entity.get("sites_aae") or "none"
 
-        sites_provided = (
-            inquirer.text(
-                "Provide sites (like 'XYZ01,XYZ02' or 'ALL' or blank to remove):"
-            ).execute()
-            or ""
-        )
+        print(f"ℹ️  Current {activity_type_choice} sites: {sites_existing}")
+
+        sites_provided = inquirer.text(
+            "Type site codes (e.g. 'XYZ01,XYZ02', 'ALL') or leave blank to remove:"
+        ).execute()
 
         update_sites(
             table,
             scheme_choice,
             scenario_choice,
             activity_type_choice,
-            sites_provided,  # gets deleted if empty string
+            sites_provided,  # site property deleted if None
         )
 
         if sites_provided == "":
-            print(f"🏥 Removed all {activity_type_choice} sites.")
+            print(f"✅ Removed all {activity_type_choice} sites. Exiting.")
         else:
-            print(f"🏥 Set {activity_type_choice} sites to '{sites_provided}'.")
-
-    print(f"✅ Updated {scenario_choice} for scheme {scheme_choice}. Exiting.")
+            print(
+                f"✅ Set {activity_type_choice} sites to '{sites_provided}'. Exiting."
+            )
 
 
 if __name__ == "__main__":
