@@ -3,14 +3,15 @@ TUI for editing NHP model-run entities in Azure Table Storage.
 """
 
 import os
-from InquirerPy import inquirer
+
 from dotenv import load_dotenv
+from InquirerPy import inquirer
 
 from .table import (
+    fetch_scenarios,
     get_table_client,
     get_table_entity,
     get_unique_schemes,
-    fetch_scenarios,
     list_scenarios,
     update_run_stage,
     update_sites,
@@ -31,7 +32,7 @@ def main() -> None:
             "AZURE_STORAGE_ACCOUNT_NAME and MODEL_RUNS_TABLE_NAME must be set."
         )
 
-    print("⏳ Connecting to table...")
+    print(f"⏳ Connecting to table '{table_name}'...")
     table = get_table_client(storage_account_name, table_name)
 
     print("⏳ Fetching scheme codes...")
@@ -76,7 +77,7 @@ def main() -> None:
                     "final_report_ndg3",
                     "validation_report_ndg3",
                     "validation_report_ndg2",
-                    "Other"
+                    "Other",
                 ],
             ).execute()
 
