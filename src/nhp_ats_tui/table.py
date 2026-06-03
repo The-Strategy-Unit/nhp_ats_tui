@@ -2,7 +2,9 @@
 Access and handle entities from Azure Table Storage.
 """
 
-from azure.data.tables import TableClient, TableEntity, UpdateMode
+from datetime import datetime, timezone
+
+from azure.data.tables import TableClient, UpdateMode
 from azure.identity import DefaultAzureCredential
 
 
@@ -109,6 +111,7 @@ def list_scenarios(scenarios: list[dict]) -> list[str]:
 
 def update_run_stage(
     table_client: TableClient,
+    scenarios: list[dict],
     scheme_choice: str,
     scenario_choice: str,
     tag_choice: str | None,
@@ -118,6 +121,7 @@ def update_run_stage(
 
     Args:
         table_client (TableClient): An authenticated TableClient.
+        scenarios (list[dict]): Each dict contains selected values for an entity.
         scheme_choice (str): Selected scheme code (the entity's PartitionKey).
         scenario_choice (str): Selected scenario name.
         tag_choice (str | None): Selected run-stage tag.
@@ -125,7 +129,7 @@ def update_run_stage(
     Returns:
         None. The entity is updated the corresponding Azure Table Storage.
     """
-    entity = get_table_entity(table_client, scheme_choice, scenario_choice)
+    entity = get_scenario(scenarios, scheme_choice, scenario_choice)
 
     if tag_choice is None:
         entity.pop("run_stage", None)
@@ -138,8 +142,52 @@ def update_run_stage(
     )
 
 
+def get_scenario(
+    scenarios: list[dict], scheme_choice: str, scenario_choice: str
+) -> dict:
+    scenario_choice_split = scenario_choice.split()
+
+    scenario_name = scenario_choice_split[0]
+
+    date = scenario_choice_split[1].strip("(")
+    time = scenario_choice_split[2].strip(")")
+    datetime_str = f"{date} {time}"
+    created_dt = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S+00:00").replace(
+        tzinfo=timezone.utc
+    )
+
+    scenario = next(
+        s
+        for s in scenarios
+        if s["PartitionKey"] == scheme_choice
+        and s["scenario"] == scenario_name
+        and s["create_datetime"] == created_dt
+    )
+
+    return scenario
+
+
+def get_existing_sites(
+    scenarios: list[dict], scheme_choice: str, scenario_choice: str, task_choice: str
+) -> tuple:
+    scenario = get_scenario(scenarios, scheme_choice, scenario_choice)
+
+    if "inpatients" in task_choice:
+        activity_type_choice = "inpatients"
+        sites_existing = scenario.get("sites_ip") or "none"
+    elif "outpatients" in task_choice:
+        activity_type_choice = "outpatients"
+        sites_existing = scenario.get("sites_op") or "none"
+    elif "A&E" in task_choice:
+        activity_type_choice = "A&E"
+        sites_existing = scenario.get("sites_aae") or "none"
+
+    return activity_type_choice, sites_existing
+
+
 def update_sites(
     table_client: TableClient,
+    scenarios: list[dict],
     scheme_choice: str,
     scenario_choice: str,
     activity_type_choice: str,
@@ -150,6 +198,7 @@ def update_sites(
 
     Args:
         table_client (TableClient): An authenticated TableClient.
+        scenarios (list[dict]): Each dict contains selected values for an entity.
         scheme_choice (str): Selected scheme code (the entity's PartitionKey).
         scenario_choice (str): Selected scenario name.
         activity_type_choice (str): Selected activity type.
@@ -158,7 +207,7 @@ def update_sites(
     Returns:
         None. The entity is updated the corresponding Azure Table Storage.
     """
-    entity = get_table_entity(table_client, scheme_choice, scenario_choice)
+    entity = get_scenario(scenarios, scheme_choice, scenario_choice)
 
     if "inpatients" in activity_type_choice:
         # Remove the property from the entity if empty, otherwise overwrite
