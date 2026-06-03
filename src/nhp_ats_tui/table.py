@@ -29,38 +29,6 @@ def get_table_client(storage_account_name: str, table_name: str) -> TableClient:
     return table_client
 
 
-def get_table_entity(
-    table: TableClient,
-    scheme_choice: str,
-    scenario_choice: str,
-) -> TableEntity:
-    """
-    Get a TableEntity from an authenticated TableClient instance.
-
-    Args:
-        table (TableClient): An authenticated TableClient.
-        scheme_choice (str): Selected scheme code (the entity's PartitionKey).
-        scenario_choice (str): Selected scenario name.
-
-    Returns:
-        A TableEntity.
-    """
-
-    scenario_choice_split = scenario_choice.split()
-    scenario = scenario_choice_split[0]
-    created = scenario_choice_split[1].strip("()")
-
-    # RowKey is an entity-unique identifier, composed of name and datetime
-    row_key = f"{scenario}-{created}"
-
-    entity = table.get_entity(
-        partition_key=scheme_choice,
-        row_key=row_key,
-    )
-
-    return entity
-
-
 def get_unique_schemes(table: TableClient) -> list[str]:
     """
     Retrieve all distinct scheme codes (PartitionKey values) from a table.
