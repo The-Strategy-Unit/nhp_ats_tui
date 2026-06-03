@@ -9,8 +9,8 @@ from InquirerPy import inquirer
 
 from .table import (
     fetch_scenarios,
+    get_existing_sites,
     get_table_client,
-    get_table_entity,
     get_unique_schemes,
     list_scenarios,
     update_run_stage,
@@ -93,7 +93,9 @@ def main() -> None:
                             "Type a run-stage tag (lowercase, underscore-separated, with NDG variant):"
                         ).execute()
 
-                update_run_stage(table, scheme_choice, scenario_choice, tag_choice)
+                update_run_stage(
+                    table, scenarios, scheme_choice, scenario_choice, tag_choice
+                )
 
                 if tag_subtask_choice == "Remove":
                     print("✓ Removed run-stage tag.")
@@ -103,18 +105,9 @@ def main() -> None:
                     print("ℹ Returning to scheme selection. Use Ctrl+C to exit.")
 
             elif "Edit sites" in task_choice:
-                entity = get_table_entity(table, scheme_choice, scenario_choice)
-
-                if "inpatients" in task_choice:
-                    activity_type_choice = "inpatients"
-                    sites_existing = entity.get("sites_ip") or "none"
-                elif "outpatients" in task_choice:
-                    activity_type_choice = "outpatients"
-                    sites_existing = entity.get("sites_op") or "none"
-                elif "A&E" in task_choice:
-                    activity_type_choice = "A&E"
-                    sites_existing = entity.get("sites_aae") or "none"
-
+                activity_type_choice, sites_existing = get_existing_sites(
+                    scenarios, scheme_choice, scenario_choice, task_choice
+                )
                 print(f"ℹ Current {activity_type_choice} sites: {sites_existing}")
 
                 sites_provided = inquirer.text(
@@ -123,10 +116,11 @@ def main() -> None:
 
                 update_sites(
                     table,
+                    scenarios,
                     scheme_choice,
                     scenario_choice,
                     activity_type_choice,
-                    sites_provided,  # site property deleted if None
+                    sites_provided,  # site property will be deleted if None
                 )
 
                 if sites_provided == "":
