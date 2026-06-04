@@ -8,11 +8,13 @@ from dotenv import load_dotenv
 from InquirerPy import inquirer
 
 from .table import (
-    fetch_scenarios,
-    get_existing_sites,
-    get_table_client,
-    get_unique_schemes,
-    list_scenarios,
+    create_scenario_label_lookup,
+    create_table_client,
+    fetch_entities,
+    filter_entities_by_dataset,
+    find_entity_by_label,
+    find_entity_sites,
+    list_unique_schemes,
     update_run_stage,
     update_sites,
 )
@@ -22,7 +24,7 @@ def main() -> None:
     """
     Run the interactive editing session.
     """
-    print("ℹ Use Ctrl+C to exit.")
+    print("ℹ Use Ctrl+C to exit at any point.")
 
     print("ℹ Getting environment variables...")
     load_dotenv()  # load from .env file, otherwise from environment
@@ -34,11 +36,17 @@ def main() -> None:
             "AZURE_STORAGE_ACCOUNT_NAME and MODEL_RUNS_TABLE_NAME must be set."
         )
 
-    print(f"ℹ Connecting to table '{table_name}'...")
-    table = get_table_client(storage_account_name, table_name)
+    print("ℹ Connecting to table...", end=" ")
+    table = create_table_client(storage_account_name, table_name)
+    print(f"'{table_name}'.")
 
-    print("ℹ Fetching scheme codes...")
-    schemes_unique = get_unique_schemes(table)
+    print("ℹ Collecting entities...", end=" ")
+    entities = fetch_entities(table)
+    print(f"n = {len(entities)}.")
+
+    print("ℹ Fetching scheme codes...", end=" ")
+    schemes_unique = list_unique_schemes(entities)
+    print(f"n = {len(schemes_unique)}.")
 
     while True:
         try:
@@ -47,13 +55,17 @@ def main() -> None:
                 choices=schemes_unique,
             ).execute()
 
-            scenarios = fetch_scenarios(table, scheme_choice)
-            scenarios_list = list_scenarios(scenarios)
+            # Limit to chosen dataset
+            dataset_entities = filter_entities_by_dataset(entities, scheme_choice)
+            scenarios_lookup = create_scenario_label_lookup(dataset_entities)
 
             scenario_choice = inquirer.select(
                 message="Choose a scenario to edit:",
-                choices=scenarios_list,
+                choices=list(scenarios_lookup.keys()),
             ).execute()
+
+            # Limit to chosen scenario
+            entity = find_entity_by_label(entities, scenario_choice, scenarios_lookup)
 
             task_choice = inquirer.select(
                 message="Choose a task:",
@@ -72,9 +84,8 @@ def main() -> None:
                 ).execute()
 
                 if tag_subtask_choice == "Remove":
-                    tag_choice = (
-                        None  # will remove the run_stage property from the entity
-                    )
+                    # Will cause run_stage property to be removed
+                    tag_choice = None
 
                 if tag_subtask_choice == "Add/change":
                     tag_choice = inquirer.select(
@@ -93,9 +104,7 @@ def main() -> None:
                             "Type a run-stage tag (lowercase, underscore-separated, with NDG variant):"
                         ).execute()
 
-                update_run_stage(
-                    table, scenarios, scheme_choice, scenario_choice, tag_choice
-                )
+                update_run_stage(table, entity, tag_choice)
 
                 if tag_subtask_choice == "Remove":
                     print("✓ Removed run-stage tag.")
@@ -105,10 +114,10 @@ def main() -> None:
                     print("ℹ Returning to scheme selection. Use Ctrl+C to exit.")
 
             elif "Edit sites" in task_choice:
-                activity_type_choice, sites_existing = get_existing_sites(
-                    scenarios, scheme_choice, scenario_choice, task_choice
+                activity_type_choice, sites_existing = find_entity_sites(
+                    entity, task_choice
                 )
-                print(f"ℹ Current {activity_type_choice} sites: {sites_existing}")
+                print(f"ℹ Current {activity_type_choice} sites: {sites_existing}.")
 
                 sites_provided = inquirer.text(
                     "Type site codes (e.g. 'XYZ01,XYZ02', 'ALL') or leave blank to remove:"
@@ -116,9 +125,7 @@ def main() -> None:
 
                 update_sites(
                     table,
-                    scenarios,
-                    scheme_choice,
-                    scenario_choice,
+                    entity,
                     activity_type_choice,
                     sites_provided,  # site property will be deleted if None
                 )
@@ -131,7 +138,7 @@ def main() -> None:
                     print("ℹ Returning to scheme selection. Use Ctrl+C to exit.")
 
         except KeyboardInterrupt:
-            print("✕ Interrupted. Exiting.")
+            print("✕ Interrupted. Exiting.")  # on Ctrl+C
             return
 
 
