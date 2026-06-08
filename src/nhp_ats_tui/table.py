@@ -2,11 +2,11 @@
 Access and handle entities from Azure Table Storage.
 """
 
-from azure.data.tables import TableClient, TableEntity, UpdateMode
+from azure.data.tables import TableClient, UpdateMode
 from azure.identity import DefaultAzureCredential
 
 
-def get_table_client(storage_account_name: str, table_name: str) -> TableClient:
+def create_table_client(storage_account_name: str, table_name: str) -> TableClient:
     """
     Create an authenticated Azure TableClient instance.
 
@@ -29,169 +29,200 @@ def get_table_client(storage_account_name: str, table_name: str) -> TableClient:
     return table_client
 
 
-def get_table_entity(
-    table: TableClient,
-    scheme_choice: str,
-    scenario_choice: str,
-) -> TableEntity:
+def fetch_entities(table_client: TableClient, query: str = "") -> list[dict]:
     """
-    Get a TableEntity from an authenticated TableClient instance.
+    Fetch all entities from the Azure TableClient.
+
+    Create this object and filter it instead of making repeated Azure calls.
 
     Args:
         table (TableClient): An authenticated TableClient.
-        scheme_choice (str): Selected scheme code (the entity's PartitionKey).
-        scenario_choice (str): Selected scenario name.
+        query (str): A server-side OData query to filter the entities.
 
     Returns:
-        A TableEntity.
+        A list of dicts that contain entity properties.
     """
+    entities_iterator = table_client.query_entities(query_filter=query)
+    entities = [dict(entity) for entity in entities_iterator]
+    return entities
 
-    scenario_choice_split = scenario_choice.split()
-    scenario = scenario_choice_split[0]
-    created = scenario_choice_split[1].strip("()")
 
-    # RowKey is an entity-unique identifier, composed of name and datetime
-    row_key = f"{scenario}-{created}"
+def list_unique_schemes(entities: list[dict]) -> list[str]:
+    """
+    Get a list of the unique dataset codes available from the entities.
 
-    entity = table.get_entity(
-        partition_key=scheme_choice,
-        row_key=row_key,
+    This will be shown to users as a selectable option in the TUI.
+
+    Args:
+        entities (list[dict]): Entities fetched from the Azure TableClient.
+        dataset (str): The dataset code (e.g. R0A).
+
+    Returns:
+        A list of unique dataset code strings.
+    """
+    schemes = [entity["PartitionKey"] for entity in entities]
+    unique_schemes = sorted(list(set(schemes)))  # case-sensitive, caps first
+    return unique_schemes
+
+
+def filter_entities_by_dataset(entities: list[dict], dataset: str) -> list[dict]:
+    """
+    Get the entities for a given dataset.
+
+    Filter down the list of entities to the dataset of interest to the TUI user.
+
+    Args:
+        entities (list[dict]): Entities fetched from the Azure TableClient.
+        dataset (str): The dataset code (e.g. R0A).
+
+    Returns:
+        A list of dicts (limited to a given dataset) that contain entity properties.
+    """
+    dataset_entities = [
+        entity for entity in entities if entity["PartitionKey"] in dataset
+    ]
+    dataset_entities_sorted = sorted(
+        dataset_entities,
+        key=lambda x: x["create_datetime"],
+        reverse=True,  # newest first
     )
+    return dataset_entities_sorted
 
-    return entity
 
-
-def get_unique_schemes(table: TableClient) -> list[str]:
+def create_scenario_label_lookup(entities: list[dict]) -> dict:
     """
-    Retrieve all distinct scheme codes (PartitionKey values) from a table.
+    Generate a lookup of scenario labels to unique entity RowKeys.
+
+    The scenario labels will be presented to the user in the TUI so they can
+    select the entity they want to interact with. The corresponding entity's
+    unique RowKey can be looked up given the scenario label.
 
     Args:
-        table (TableClient): An authenticated TableClient.
+        entities (list[dict]): Entities fetched from the Azure TableClient.
 
     Returns:
-        A sorted list of unique scheme codes.
+        A dict with scenario labels as keys and entity RowKeys as values.
     """
-    schemes = table.query_entities(
-        query_filter="",  # mandatory argument, blank to return all entities
-        select=["PartitionKey"],  # entities are partitioned by scheme code
-    )
-    schemes_unique = sorted({scheme["PartitionKey"] for scheme in schemes})
+    label_lookup = {}
 
-    return schemes_unique
-
-
-def fetch_scenarios(table: TableClient, scheme_code: str) -> list[dict]:
-    """
-    Fetch all scenarios for a given scheme code.
-
-    Args:
-        table (TableClient): An authenticated TableClient.
-        scheme_code (str): Selected scheme code (the entity's PartitionKey).
-
-    Returns:
-        A list of dictionaries containing scenario metadata.
-    """
-    filter_expr = f"PartitionKey eq '{scheme_code}'"
-    entities = table.query_entities(query_filter=filter_expr)  # server-side query
-
-    scenarios = []
     for entity in entities:
-        scenarios.append(
-            {
-                # Identifiers
-                "PartitionKey": entity["PartitionKey"],
-                "RowKey": entity["RowKey"],
-                "scenario": entity["scenario"],
-                "create_datetime": entity["create_datetime"],
-                # Items to edit
-                "run_stage": entity.get("run_stage"),
-                "sites_ip": entity.get("sites_ip"),
-                "sites_op": entity.get("sites_op"),
-                "sites_aae": entity.get("sites_aae"),
-            }
-        )
+        scenario = entity["scenario"]
+        create_datetime = entity["create_datetime"]
+        if entity.get("run_stage") is None:
+            run_stage = ""
+        else:
+            run_stage = f" [{entity['run_stage']}]"
+        scenario_label = f"{scenario} ({create_datetime}){run_stage}"
+        label_lookup.update({scenario_label: entity["RowKey"]})
 
-    return scenarios
+    return label_lookup
 
 
-def list_scenarios(scenarios: list[dict]) -> list[str]:
+def find_entity_by_label(
+    entities: list[dict], scenario_label_choice: str, scenario_label_lookup: dict
+) -> dict:
     """
-    Format scenarios for display in an interactive selection list.
+    Get a specific entity given a user's scenario choice.
+
+    Take the user's selected scenario label, look up the corresponding unique
+    RowKey and filter the entities list to isolate the entity representing that
+    scenario.
 
     Args:
-        scenarios (list[dict]): List of scenario dictionaries returned by fetch_scenarios().
+        entities (list[dict]): Entities fetched from the Azure TableClient.
+        scenario_label_choice (str): The scenario label chosen by the user.
+        scenario_label_lookup (dict): The scenario-label-to-unique-RowKey lookup.
 
     Returns:
-        A list of formatted scenario labels for TUI selection, in the format
-        "<scenario> (<create_datetime>)", possibly appended with "[<run_stage>]".
+        A single entity as a dict.
     """
-    values = []
-    for scenario in scenarios:
-        scenario_name = scenario["scenario"]
-        created = scenario["create_datetime"]
-        if scenario["run_stage"] is None:
-            stage = ""
-        else:
-            stage = f" [{scenario['run_stage']}]"
-        label = f"{scenario_name} ({created}){stage}"
-        values.append(label)
+    row_key = scenario_label_lookup[scenario_label_choice]
+    entity = [entity for entity in entities if entity["RowKey"] in row_key]
+    entity_dict = entity[0]  # only one dict because RowKey is unique
+    return entity_dict
 
-    return values
+
+def find_entity_sites(entity: dict, task_choice: str) -> tuple:
+    """
+    Get an entity's sites for a given activity type.
+
+    Find the existing sites, if any, for the user's selected entity. This
+    information will be presented back to the user in the TUI so they can
+    see the current sites before they can choose to update them.
+
+    Args:
+        entity (dict): The entity from which to fetch a site property.
+        task_choice (str): The task chosen by the user.
+
+    Returns:
+        A tuple with the activity type ("inpatients", "outpatients", "A&E") and
+        existing sites (in the form "XYZ01,XYZ02", "ALL" or None).
+    """
+    if "inpatients" in task_choice:
+        activity_type_choice = "inpatients"
+        sites_existing = entity.get("sites_ip") or "none"
+    elif "outpatients" in task_choice:
+        activity_type_choice = "outpatients"
+        sites_existing = entity.get("sites_op") or "none"
+    elif "A&E" in task_choice:
+        activity_type_choice = "A&E"
+        sites_existing = entity.get("sites_aae") or "none"
+
+    return activity_type_choice, sites_existing
 
 
 def update_run_stage(
     table_client: TableClient,
-    scheme_choice: str,
-    scenario_choice: str,
+    entity: dict,
     tag_choice: str | None,
 ) -> None:
     """
     Update the run-stage property for an existing scenario entity.
 
+    Amend the ATS table by changing a single entity's run_stage value or by
+    removing the property entirely, given the user's choice in the TUI.
+
     Args:
         table_client (TableClient): An authenticated TableClient.
-        scheme_choice (str): Selected scheme code (the entity's PartitionKey).
-        scenario_choice (str): Selected scenario name.
+        entity (dict): The single entity to be updated.
         tag_choice (str | None): Selected run-stage tag.
 
     Returns:
         None. The entity is updated the corresponding Azure Table Storage.
     """
-    entity = get_table_entity(table_client, scheme_choice, scenario_choice)
-
     if tag_choice is None:
-        entity.pop("run_stage", None)
+        entity.pop("run_stage", None)  # remove property entirely from entity
     else:
         entity["run_stage"] = tag_choice
 
     table_client.update_entity(
         entity=entity,
-        mode=UpdateMode.REPLACE,  # REPLACE because properties may have been removed
+        mode=UpdateMode.REPLACE,  # REPLACE not MERGE because run_stage may be removed
     )
 
 
 def update_sites(
     table_client: TableClient,
-    scheme_choice: str,
-    scenario_choice: str,
+    entity: dict,
     activity_type_choice: str,
     sites_provided: str | None,
 ) -> None:
     """
-    Update or remove the site-code property for an existing scenario entity.
+    Update a sites property for an existing scenario entity.
+
+    Amend the ATS table by changing a single entity's sites_aae, sites_ip or
+    sites_op value or by removing the property entirely, given the user's choice
+    in the TUI.
 
     Args:
         table_client (TableClient): An authenticated TableClient.
-        scheme_choice (str): Selected scheme code (the entity's PartitionKey).
-        scenario_choice (str): Selected scenario name.
+        entity (dict): The single entity to be updated.
         activity_type_choice (str): Selected activity type.
         sites_provided (str | None): A comma-separated string of site codes.
 
     Returns:
         None. The entity is updated the corresponding Azure Table Storage.
     """
-    entity = get_table_entity(table_client, scheme_choice, scenario_choice)
-
     if "inpatients" in activity_type_choice:
         # Remove the property from the entity if empty, otherwise overwrite
         if sites_provided is None:

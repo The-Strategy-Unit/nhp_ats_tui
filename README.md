@@ -22,39 +22,41 @@ For now, the tool lets you review and update a model run's:
 
 ## Usage
 
-### To develop
+### 1. Install
 
-After cloning the repo, set two values in a `.env` file in the project directory:
-
-* `AZURE_STORAGE_ACCOUNT_NAME`
-* `MODEL_RUNS_TABLE_NAME`
-
-They're used to build the table endpoint in the form `https://demoaccount.table.core.windows.net/demotable`.
-
-Authorised users can obtain these values from the Data Science team.
-
-Then you can develop the tool with the project in editable mode:
+For development, clone the repo to a directory of your choice and use [uv](https://docs.astral.sh/uv/) to install the project in editable mode:
 
 ```bash
 uv pip install -e .
 ```
 
-### To install
-
-Alternatively, you can install the tool from the web using [uv](https://docs.astral.sh/uv/getting-started/installation/).
+Alternatively, you can [install it as a tool](https://docs.astral.sh/uv/concepts/tools/) from the web using [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
 ```bash
 uv tool install git+https://github.com/The-Strategy-Unit/nhp_ats_tui.git
 ```
 
+### 2. Add environment variables
+
+You will need two environment variables:
+
+* `AZURE_STORAGE_ACCOUNT_NAME`
+* `MODEL_RUNS_TABLE_NAME`
+
+They're used to build the table endpoint in the form `https://<AZURE_STORAGE_ACCOUNT_NAME>.table.core.windows.net/<MODEL_RUNS_TABLE_NAME>`.
+
+Authorised users can obtain these values from the Data Science team.
+
 You can set the required environment variables in several ways.
 You could:
 
-* add a `.env` to the directory you're working in
-* use e.g. `setx AZURE_STORAGE_ACCOUNT_NAME "demoaccount"` in Powershell (then restart the terminal) to set them persistently
-* use `$env:AZURE_STORAGE_ACCOUNT_NAME = "demoaccount"` in Powershell to set them in the current session
+* add a `.env` to the directory you're developing in
+* use e.g. `setx AZURE_STORAGE_ACCOUNT_NAME "demoaccount"` in Powershell (then restart the terminal) to set variables persistently
+* use `$env:AZURE_STORAGE_ACCOUNT_NAME = "demoaccount"` in Powershell to set ephemeral variables in the current session
 
-### Login to Azure
+Not that the Powershell variables will take precedence over the ones in `.env`.
+
+### 3. Login to Azure
 
 Before using the tool, you must first login to Azure with [the Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest):
 
@@ -64,7 +66,7 @@ az login
 
 Assuming you're authorised, select the account where the table exists.
 
-### Enter the TUI
+### 4. Enter the TUI
 
 Having completed the steps above, you can enter the interactive TUI:
 

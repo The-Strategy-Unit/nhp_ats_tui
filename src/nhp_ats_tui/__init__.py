@@ -1,19 +1,23 @@
 from .table import (
-    get_table_client,
-    get_table_entity,
-    get_unique_schemes,
-    fetch_scenarios,
-    list_scenarios,
+    create_scenario_label_lookup,
+    create_table_client,
+    fetch_entities,
+    filter_entities_by_dataset,
+    find_entity_by_label,
+    find_entity_sites,
+    list_unique_schemes,
     update_run_stage,
     update_sites,
 )
 
 __all__ = [
-    "get_table_client",
-    "get_table_entity",
-    "get_unique_schemes",
-    "fetch_scenarios",
-    "list_scenarios",
+    "create_scenario_label_lookup",
+    "create_table_client",
+    "fetch_entities",
+    "filter_entities_by_dataset",
+    "find_entity_by_label",
+    "find_entity_sites",
+    "list_unique_schemes",
     "update_run_stage",
     "update_sites",
 ]
