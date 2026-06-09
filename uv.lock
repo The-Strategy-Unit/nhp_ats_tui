@@ -499,7 +499,7 @@ wheels = [
 
 [[package]]
 name = "nhp-ats-tui"
-version = "0.1.0.9000"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "azure-data-tables" },

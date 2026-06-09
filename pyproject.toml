@@ -1,6 +1,6 @@
 [project]
 name = "nhp_ats_tui"
-version = "0.1.0.9000"
+version = "0.3.0"
 description = "TUI to edit NHP model-run entities in Azure Table Storage"
 authors = [
     { name = "Matt Dray", email = "matt.dray@nhs.net" },
