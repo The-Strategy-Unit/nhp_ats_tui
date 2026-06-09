@@ -59,7 +59,7 @@ def main() -> None:
             dataset_entities = filter_entities_by_dataset(entities, scheme_choice)
             scenarios_lookup = create_scenario_label_lookup(dataset_entities)
 
-            scenario_choice = inquirer.select(
+            scenario_choice = inquirer.fuzzy(
                 message="Choose a scenario to edit:",
                 choices=list(scenarios_lookup.keys()),
             ).execute()
