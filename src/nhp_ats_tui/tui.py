@@ -119,9 +119,12 @@ def main() -> None:
                 )
                 print(f"ℹ Current {activity_type_choice} sites: {sites_existing}.")
 
-                sites_provided = inquirer.text(
-                    "Type site codes (e.g. 'XYZ01,XYZ02', 'ALL') or leave blank to remove:"
-                ).execute()
+                sites_provided = (
+                    inquirer.text(
+                        "Type site codes (e.g. 'XYZ01,XYZ02', 'ALL') or leave blank to remove:"
+                    ).execute()
+                    or None
+                )
 
                 update_sites(
                     table,
@@ -130,7 +133,7 @@ def main() -> None:
                     sites_provided,  # site property will be deleted if None
                 )
 
-                if sites_provided == "":
+                if sites_provided is None:
                     print(f"✓ Removed all {activity_type_choice} sites.")
                     print("ℹ Returning to scheme selection. Use Ctrl+C to exit.")
                 else:
