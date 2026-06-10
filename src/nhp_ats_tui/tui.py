@@ -59,7 +59,7 @@ def main() -> None:
             dataset_entities = filter_entities_by_dataset(entities, scheme_choice)
             scenarios_lookup = create_scenario_label_lookup(dataset_entities)
 
-            scenario_choice = inquirer.select(
+            scenario_choice = inquirer.fuzzy(
                 message="Choose a scenario to edit:",
                 choices=list(scenarios_lookup.keys()),
             ).execute()
@@ -119,9 +119,12 @@ def main() -> None:
                 )
                 print(f"ℹ Current {activity_type_choice} sites: {sites_existing}.")
 
-                sites_provided = inquirer.text(
-                    "Type site codes (e.g. 'XYZ01,XYZ02', 'ALL') or leave blank to remove:"
-                ).execute()
+                sites_provided = (
+                    inquirer.text(
+                        "Type site codes (e.g. 'XYZ01,XYZ02', 'ALL') or leave blank to remove:"
+                    ).execute()
+                    or None
+                )
 
                 update_sites(
                     table,
@@ -130,7 +133,7 @@ def main() -> None:
                     sites_provided,  # site property will be deleted if None
                 )
 
-                if sites_provided == "":
+                if sites_provided is None:
                     print(f"✓ Removed all {activity_type_choice} sites.")
                     print("ℹ Returning to scheme selection. Use Ctrl+C to exit.")
                 else:
